@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-
+            PomodoroTimer()
         }
     }
 }
@@ -57,9 +57,11 @@ fun PomodoroTimer() {
     var progress by remember { mutableStateOf(0f) }
     var isTimerRunning by remember { mutableStateOf(false) }
     var buttonText by remember { mutableStateOf("Start") }
-    val totalTimeInSeconds = 2 * 60
+    val workTimeInSeconds = 1 * 60
+    val restTimeInSeconds = 1 * 60
     val rounded = 90
     var elapsedTime by remember { mutableStateOf(0f) }
+    var elapsedRestTime by remember { mutableStateOf(restTimeInSeconds) }
     val widthFraction = 0.75f
 
     val animatedProgress by animateFloatAsState(
@@ -71,15 +73,23 @@ fun PomodoroTimer() {
 
     LaunchedEffect(key1 = isTimerRunning) {
         if (isTimerRunning) {
-            while (elapsedTime < totalTimeInSeconds) {
+            while (elapsedTime < workTimeInSeconds) {
                 delay(1000)
                 elapsedTime += 1f
-                progress = elapsedTime / totalTimeInSeconds
+                progress = elapsedTime / workTimeInSeconds
             }
+
+            while (elapsedRestTime > 0) {
+                delay(1000)
+                elapsedRestTime -= 1
+                progress = (elapsedRestTime.toFloat() / restTimeInSeconds)
+            }
+
             isTimerRunning = false
             buttonText = "Start"
             progress = 0f
             elapsedTime = 0f
+            elapsedRestTime = restTimeInSeconds
         }
     }
 
@@ -98,31 +108,24 @@ fun PomodoroTimer() {
     ) {
         Spacer(modifier = Modifier.weight(0.1f))
 
-        Row(
-
-        ){
+        Row {
             Spacer(modifier = Modifier.weight(0.1f))
-            Text(text = formatTime(elapsedTime))
+            Text(text = "Work time")
             Spacer(modifier = Modifier.weight(0.1f))
-            Text(text = formatTime(elapsedTime))
+            Text(text = "Rest time")
             Spacer(modifier = Modifier.weight(0.1f))
 
         }
 
-        Spacer(modifier = Modifier.weight(0.1f))
+        Row {
+            Spacer(modifier = Modifier.weight(0.1f))
+            Text(text = formatTime(elapsedTime))
+            Spacer(modifier = Modifier.weight(0.1f))
+            Text(text = formatTime(elapsedRestTime.toFloat()))
+            Spacer(modifier = Modifier.weight(0.1f))
+        }
 
-        /*
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.8f)
-                .padding(bottom = 16.dp)
-                .fillMaxSize(),
-            color = Color.Blue,
-            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
-        )
-        */
+        Spacer(modifier = Modifier.weight(0.1f))
 
         Row (
             modifier = Modifier
@@ -190,9 +193,7 @@ fun PomodoroTimer() {
         }
         Spacer(modifier = Modifier.weight(0.1f))
 
-        Row(
-
-        ) {
+        Row{
             Spacer(modifier = Modifier.weight(0.1f))
 
             Button(onClick = {
