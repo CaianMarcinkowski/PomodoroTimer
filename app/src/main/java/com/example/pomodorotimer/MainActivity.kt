@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -39,6 +38,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import com.example.pomodorotimer.ui.theme.Coffe
 import kotlinx.coroutines.delay
+import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -47,56 +47,66 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            PomodoroTimer()
+            CoffeeMugTimer()
         }
     }
 }
 
 @Composable
-fun PomodoroTimer() {
-    var progress by remember { mutableStateOf(0f) }
+fun CoffeeMugTimer() {
+    var progress by remember { mutableFloatStateOf(0f) }
     var isTimerRunning by remember { mutableStateOf(false) }
     var buttonText by remember { mutableStateOf("Start") }
+    var statusText by remember { mutableStateOf("Work") }
     val workTimeInSeconds = 1 * 60
     val restTimeInSeconds = 1 * 60
     val rounded = 90
-    var elapsedTime by remember { mutableStateOf(0f) }
-    var elapsedRestTime by remember { mutableStateOf(restTimeInSeconds) }
+    var elapsedTime by remember { mutableFloatStateOf(0f) }
+    var elapsedRestTime by remember { mutableIntStateOf(restTimeInSeconds) }
+    var timeToShow by remember { mutableFloatStateOf(0f) }
     val widthFraction = 0.75f
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
-        animationSpec = tween(durationMillis = 2000, easing = LinearEasing)
+        animationSpec = tween(durationMillis = 2000, easing = LinearEasing), label = ""
     )
 
-    var coroutimeScope = rememberCoroutineScope()
+    fun resetTimer() {
+        isTimerRunning = false
+        buttonText = "Start"
+        statusText = "Work"
+        progress = 0f
+        elapsedTime = 0f
+        elapsedRestTime = restTimeInSeconds
+    }
 
     LaunchedEffect(key1 = isTimerRunning) {
         if (isTimerRunning) {
+            timeToShow = elapsedTime
             while (elapsedTime < workTimeInSeconds) {
                 delay(1000)
                 elapsedTime += 1f
+                timeToShow += 1f
                 progress = elapsedTime / workTimeInSeconds
             }
 
+            timeToShow = elapsedRestTime.toFloat()
+            statusText = "Rest"
             while (elapsedRestTime > 0) {
                 delay(1000)
                 elapsedRestTime -= 1
+                timeToShow -= 1
                 progress = (elapsedRestTime.toFloat() / restTimeInSeconds)
             }
 
-            isTimerRunning = false
-            buttonText = "Start"
-            progress = 0f
-            elapsedTime = 0f
-            elapsedRestTime = restTimeInSeconds
+            resetTimer()
         }
     }
 
     fun formatTime(seconds: Float): String {
         val minutes = (seconds / 60).toInt()
         val secs = (seconds % 60).toInt()
-        return String.format("%02d:%02d", minutes, secs)
+        return String.format(locale = Locale.ENGLISH ,"%02d:%02d", minutes, secs)
     }
 
     Column(
@@ -108,21 +118,9 @@ fun PomodoroTimer() {
     ) {
         Spacer(modifier = Modifier.weight(0.1f))
 
-        Row {
-            Spacer(modifier = Modifier.weight(0.1f))
-            Text(text = "Work time")
-            Spacer(modifier = Modifier.weight(0.1f))
-            Text(text = "Rest time")
-            Spacer(modifier = Modifier.weight(0.1f))
-
-        }
-
-        Row {
-            Spacer(modifier = Modifier.weight(0.1f))
-            Text(text = formatTime(elapsedTime))
-            Spacer(modifier = Modifier.weight(0.1f))
-            Text(text = formatTime(elapsedRestTime.toFloat()))
-            Spacer(modifier = Modifier.weight(0.1f))
+        Column {
+            Text(text = statusText)
+            Text(text = formatTime(timeToShow))
         }
 
         Spacer(modifier = Modifier.weight(0.1f))
@@ -193,8 +191,11 @@ fun PomodoroTimer() {
         }
         Spacer(modifier = Modifier.weight(0.1f))
 
-        Row{
-            Spacer(modifier = Modifier.weight(0.1f))
+        Row(
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(start = 70.dp, end = 70.dp)
+        ){
 
             Button(onClick = {
                 if (isTimerRunning) {
@@ -218,7 +219,6 @@ fun PomodoroTimer() {
                 Text(text = "Stop")
             }
 
-            Spacer(modifier = Modifier.weight(0.1f))
         }
 
         Spacer(modifier = Modifier.weight(0.1f))
@@ -230,7 +230,7 @@ fun PomodoroTimer() {
 fun DrawWaves(progress: Float, modifier: Modifier = Modifier, backgroundColor: Color = Color.Gray, liquidColor: Color = Color.Red) {
     val waveHeight = 60f
     val maxWaveHeight = 30f
-    var waveAmplitude by remember { mutableStateOf(0f) }
+    var waveAmplitude by remember { mutableFloatStateOf(0f) }
     val waveOffset = remember { Animatable(0f) }
 
     LaunchedEffect(waveOffset) {
@@ -270,7 +270,7 @@ fun DrawWaves(progress: Float, modifier: Modifier = Modifier, backgroundColor: C
             val waveColor: Color = lerp(backgroundColor, liquidColor, progress.coerceIn(0f, 0.8f))
 
             for (x in 0..width.toInt() step 10) {
-                val waveDirection = sin(2 * PI * (x / width.toFloat()) + waveOffset.value)
+                val waveDirection = sin(2 * PI * (x / width) + waveOffset.value)
 
                 val y =
                     (waveYOffset - waveAmplitude * waveDirection ).toFloat()
@@ -282,7 +282,7 @@ fun DrawWaves(progress: Float, modifier: Modifier = Modifier, backgroundColor: C
                     strokeWidth = 10f
                 )
 
-                path.lineTo(x.toFloat(), y.toFloat())
+                path.lineTo(x.toFloat(), y)
 
             }
 
@@ -298,5 +298,5 @@ fun DrawWaves(progress: Float, modifier: Modifier = Modifier, backgroundColor: C
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
-    PomodoroTimer()
+    CoffeeMugTimer()
 }
