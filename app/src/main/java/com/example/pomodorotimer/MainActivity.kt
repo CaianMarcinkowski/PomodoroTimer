@@ -1,5 +1,7 @@
 package com.example.pomodorotimer
 
+import android.content.Context
+import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -36,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalContext
 import com.example.pomodorotimer.ui.theme.Coffe
 import kotlinx.coroutines.delay
 import java.util.Locale
@@ -78,7 +81,10 @@ fun CoffeeMugTimer() {
         progress = 0f
         elapsedTime = 0f
         elapsedRestTime = restTimeInSeconds
+        timeToShow = elapsedTime
     }
+
+    val context = LocalContext.current
 
     LaunchedEffect(key1 = isTimerRunning) {
         if (isTimerRunning) {
@@ -89,6 +95,7 @@ fun CoffeeMugTimer() {
                 timeToShow += 1f
                 progress = elapsedTime / workTimeInSeconds
             }
+            playSound(context, R.raw.gong_sound_effect)
 
             timeToShow = elapsedRestTime.toFloat()
             statusText = "Rest"
@@ -98,6 +105,7 @@ fun CoffeeMugTimer() {
                 timeToShow -= 1
                 progress = (elapsedRestTime.toFloat() / restTimeInSeconds)
             }
+            playSound(context, R.raw.gong_sound_effect)
 
             resetTimer()
         }
@@ -211,10 +219,7 @@ fun CoffeeMugTimer() {
             Spacer(modifier = Modifier.weight(0.1f))
 
             Button(onClick = {
-                isTimerRunning = false
-                buttonText = "Start"
-                progress = 0f
-                elapsedTime = 0f
+                resetTimer()
             }) {
                 Text(text = "Stop")
             }
@@ -223,6 +228,15 @@ fun CoffeeMugTimer() {
 
         Spacer(modifier = Modifier.weight(0.1f))
 
+    }
+}
+
+fun playSound(context: Context, soundResId: Int) {
+    val mediaPlayer = MediaPlayer.create(context, soundResId)
+    mediaPlayer.start()
+
+    mediaPlayer.setOnCompletionListener {
+        mediaPlayer.release()
     }
 }
 
